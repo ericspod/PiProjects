@@ -4,7 +4,7 @@ This simple script is designed for backing up data from a USB device on a pi whi
 It uses Bottle to serve a application which copies files from USB mountpoints to a time-stamped directory, for example
 backing up camera images from an SD card through a USB reader.
 
-## Setup:
+## Setup
 
  * Step 1: Install Python 3 libraries
 
@@ -24,3 +24,7 @@ backing up camera images from an SD card through a USB reader.
  
 When your pi restarts it should start the server immediately, you can then connect to the pi and access the server at 
 http://10.3.141.1 if you've setup RaspAP.
+
+To backup files you'll need something you can plug into your pi, either a USB thumb drive or a memory card adapter. 
+The original idea was to setup a Pi Zero W to run the server with a micro-USB SD card reader for backing up raw image
+files from a DSLR.
