@@ -2,7 +2,11 @@
 
 This is a simple thermal camera app using the AMG8833 (https://www.adafruit.com/product/3538) and PiTFT Plus 320x240 2.8" TFT + Resistive Touchscreen (https://www.adafruit.com/product/2298)
 
-## Setup
+## Hardware Setup
+
+Follow the instructions from the above product pages for setting up the TFT display and thermal camera. The setup assumed here has the camera plugged into the pins underneath the display, with the display directly plugged onto a Raspberry Pi.
+
+## Software Setup
 
  * Step 1: This app uses PIL, Numpy, Matplotlib, and PyGame: `pip3 install pillow numpy matplotlib pygame`.
  
@@ -11,10 +15,10 @@ This is a simple thermal camera app using the AMG8833 (https://www.adafruit.com/
        sudo pip3 install numpy --upgrade
        sudo apt-get install libatlas-base-dev
 
- * Step 2: Follow the instructions for installing the library for the AMG88xx at https://github.com/adafruit/Adafruit_AMG88xx
+ * Step 2: Follow the instructions for installing the library for the AMG88xx: https://github.com/adafruit/Adafruit_AMG88xx
  
  * Step 3: Follow the instructions for installing the library for the PiTFT: https://learn.adafruit.com/adafruit-pitft-28-inch-resistive-touchscreen-display-raspberry-pi/easy-install-2
  
    The alternative if this doesn't work is the older script `adafruit-pitft-helper2.sh` found at https://github.com/adafruit/Adafruit-PiTFT-Helper
    
-   
+ * Step 4: Follow the instructions for installing the library for the GPIO interface: https://github.com/adafruit/Adafruit_Python_GPIO  
