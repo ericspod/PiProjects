@@ -2,7 +2,11 @@
 
 This is a simple thermal camera app using the AMG8833 (https://www.adafruit.com/product/3538) and PiTFT Plus 320x240 2.8" TFT + Resistive Touchscreen (https://www.adafruit.com/product/2298)
 
-## Setup
+## Hardware Setup
+
+Follow the instructions from the above product pages for setting up the TFT display and thermal camera. The setup assumed here has the camera plugged into the pins underneath the display, with the display directly plugged onto a Raspberry Pi.
+
+## Software Setup
 
  * Step 1: This app uses PIL, Numpy, Matplotlib, and PyGame: `pip3 install pillow numpy matplotlib pygame`.
  
