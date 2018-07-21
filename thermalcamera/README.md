@@ -4,7 +4,7 @@ This is a simple thermal camera app using the AMG8833 (https://www.adafruit.com/
 
 ## Setup
 
- * Step 1: This app uses PyGame which should come installed on Raspian, otherwise use `pip install pygame`.
+ * Step 1: This app uses PIL, Numpy, Matplotlib, and PyGame: `pip3 install pillow numpy matplotlib pygame`.
 
  * Step 2: Follow the instructions for installing the library for the AMG88xx at https://github.com/adafruit/Adafruit_AMG88xx
  
