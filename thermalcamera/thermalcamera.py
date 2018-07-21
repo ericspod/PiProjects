@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 
 '''
 Copyright (C) 2016-8 Eric Kerfoot, all rights reserved, see LICENSE file
