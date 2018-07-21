@@ -1,10 +1,13 @@
+#! /usr/bin/env python
 '''
+Copyright (C) 2016-8 Eric Kerfoot, all rights reserved, see LICENSE file
+
 Backup web application.
 
 https://howtoraspberrypi.com/create-a-wi-fi-hotspot-in-less-than-10-minutes-with-pi-raspberry/
 '''
 
-#! /usr/bin/env python
+
 from __future__ import print_function
 import psutil
 import pyudev
