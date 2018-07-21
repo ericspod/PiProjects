@@ -54,8 +54,9 @@ def rescaleMode(im,mode):
     rescale by indexed range in ranges.
     '''
     if mode==0:
-        minv=im.min()
-        maxv=im.max()
+        #minv=im.min()
+        #maxv=im.max()
+        minv,maxv=np.percentile(im,[0,100])
     else:
         minv,maxv=ranges[mode]
     
