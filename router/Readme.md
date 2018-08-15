@@ -14,22 +14,22 @@ to forward traffic to the internet to eth0.
  1. Install `dnsmasq` which will act as DNS and DHCP: `sudo apt-get install dnsmasq`
  
  2. Append the following to `/etc/dnsmasq.conf`:
- 
-    interface=eth1
-      dhcp-range=10.0.0.3,10.0.0.149,255.255.255.0,24h
-      
+``` 
+interface=eth1
+ dhcp-range=10.0.0.3,10.0.0.149,255.255.255.0,24h
+```      
    This will configure dnsmasq to assign IP addresses to clients on eth1 in the range 10.0.0.3-149 with a lease of 1 day. 
 
  3. Append the following to `/etc/dhcpcd.conf`:
- 
-    interface eth0
-     statis ip_address=192.168.1.2/24
-    
-    interface eth1
-     static ip_address=10.0.0.1
-     static routers=10.0.0.1
-     static domain_name_servers=10.0.0.1,8.8.8.8
-     
+``` 
+interface eth0
+ statis ip_address=192.168.1.2/24
+
+interface eth1
+ static ip_address=10.0.0.1
+ static routers=10.0.0.1
+ static domain_name_servers=10.0.0.1,8.8.8.8
+```     
    This will assign static IP addresses to eth0 and eth1. Since eth0 is connected to the WAN the DHCP for that side of
    the network should also be configured to assign 192.168.1.2 statically to the RPi. Note that for eth1 the router and
    DNS server are the IP addresses for the RPi itself on that side of the network, this configures clients to use it for
@@ -50,39 +50,39 @@ The wireless connection is through wlan0 which will be managed using hostapd.
  1. Install `hostapd`: `sudo apt-get install hostapd`
  
  2. Append the following to `/etc/dnsmasq.conf`:
- 
-    interface=wlan0
-     dhcp-range=10.0.0.150,10.0.0.254,255.255.255.0,24h
-
+``` 
+interface=wlan0
+ dhcp-range=10.0.0.150,10.0.0.254,255.255.255.0,24h
+```
    This will configure dnsmasq to assign IP addresses to clients on wlan0 in the range 10.0.0.150-254 with a lease of 1 day.
    
  3. Append the following to `/etc/dhcpcd.conf`:
- 
-    interface wlan0
-     static ip_address=10.0.0.2
-     static routers=10.0.0.1
-     static domain_name_servers=10.0.0.1,8.8.8.8
-     nohook wpa_supplicant
-
+``` 
+interface wlan0
+ static ip_address=10.0.0.2
+ static routers=10.0.0.1
+ static domain_name_servers=10.0.0.1,8.8.8.8
+ nohook wpa_supplicant
+```
   This will assign the static IP address to wlan0 and state the other needed configuration values.
   
  4. Append the following to `/etc/hostapd/hostapd.conf`:
- 
-    interface=wlan0
-    driver=nl80211
-    ssid=NETWORKNAMEHERE
-    hw_mode=g
-    channel=7
-    wmm_enabled=0
-    macaddr_acl=0
-    auth_algs=1
-    ignore_broadcast_ssid=0
-    wpa=2
-    wpa_passphrase=STRONGPASSWORDHERE
-    wpa_key_mgmt=WPA-PSK
-    wpa_pairwise=TKIP
-    rsn_pairwise=CCMP
-    
+``` 
+interface=wlan0
+driver=nl80211
+ssid=NETWORKNAMEHERE
+hw_mode=g
+channel=7
+wmm_enabled=0
+macaddr_acl=0
+auth_algs=1
+ignore_broadcast_ssid=0
+wpa=2
+wpa_passphrase=STRONGPASSWORDHERE
+wpa_key_mgmt=WPA-PSK
+wpa_pairwise=TKIP
+rsn_pairwise=CCMP
+```    
   This configures the wireless access point. Change the ssid to be the network name by replacing `NETWORKNAMEHERE` and 
   set a strong password by replacing `STRONGPASSWORDHERE`. This assumes channel 7 is to be used.
   
