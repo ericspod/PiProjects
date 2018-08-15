@@ -45,7 +45,7 @@ interface eth1
  
 ### Setup Wireless
 
-The wireless connection is through wlan0 which will be managed using hostapd.
+The wireless connection is through wlan0 which will be managed using hostapd. The following will setup wlan0 to broadcast a wireless network clients can connect to and access the network.
 
  1. Install `hostapd`: `sudo apt-get install hostapd`
  
