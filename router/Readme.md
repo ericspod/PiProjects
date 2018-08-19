@@ -22,19 +22,16 @@ interface=eth1
 
  3. Append the following to `/etc/dhcpcd.conf`:
 ``` 
-interface eth0
- static ip_address=192.168.1.2/24
-
 interface eth1
  static ip_address=10.0.0.1
  static routers=10.0.0.1
  static domain_name_servers=10.0.0.1,8.8.8.8
 ```     
-   This will assign static IP addresses to eth0 and eth1. Since eth0 is connected to the WAN the DHCP for that side of
-   the network should also be configured to assign 192.168.1.2 statically to the RPi. Note that for eth1 the router and
+   This will assign static IP addresses to eth1. Since eth0 is connected to the WAN the DHCP for that side of
+   the network should be configured to assign 192.168.1.2 statically to the RPi. Note that for eth1 the router and
    DNS server are the IP addresses for the RPi itself on that side of the network, this configures clients to use it for
    those services.
-   
+
  4. Uncomment the line `net.ipv4.ip_forward=1` in `/etc/sysctl.conf`, this will allow forwarding of packets between ports.
  
  5. In `/etc/rc.local` place the line `iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE` before the `exit 0` line. This
