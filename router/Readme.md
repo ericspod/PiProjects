@@ -23,7 +23,7 @@ interface=eth1
  3. Append the following to `/etc/dhcpcd.conf`:
 ``` 
 interface eth0
- statis ip_address=192.168.1.2/24
+ static ip_address=192.168.1.2/24
 
 interface eth1
  static ip_address=10.0.0.1
