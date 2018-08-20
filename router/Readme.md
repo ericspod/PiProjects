@@ -5,6 +5,8 @@ The objective of this setup is to configure a Raspberry Pi to act as a router se
 and as a wireless access point. The idea is to provide the features of a home router but with filtering done through
 hosts configuration to block unwanted traffic, provide a way of monitoring traffic, and cacheing DNS queries.
 
+The network diagram below illustrates the current home network and the new one setup with the RPi. It assumes the home router is the gateway to the internet with IP 192.168.1.1. The WiFi access point for the network will be moved to the RPi and that for the router turned off.
+
 ![Network Diagram](PiDiagram.png)
 
 ### Setup Ethernet
