@@ -7,14 +7,14 @@ hosts configuration to block unwanted traffic, provide a way of monitoring traff
 
 The network diagram below illustrates the current home network and the new one setup with the RPi. It assumes the home router is the gateway to the internet with IP 192.168.1.1. The WiFi access point for the network will be moved to the RPi and that for the router turned off.
 
-**If you want to use Pihole with your server DO NOT FOLLOW THESE INSTRUCTIONS, go down to the section on this page on Pihole first.**
+![Network Diagram](PiDiagram.png)
+
+**If you want to use Pihole with your server DO NOT FOLLOW THE INSTRUCTIONS IN THE NEXT TWO SECTIONS, go down to the section on this page on Pihole first.**
 
 Updating your installation before following anything below would probably be a good idea:
 
     apt-get update
     apt-get upgrade
-
-![Network Diagram](PiDiagram.png)
 
 ### Setup Ethernet
 
