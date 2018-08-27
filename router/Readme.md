@@ -164,6 +164,7 @@ rsn_pairwise=CCMP
 ssid=NETWORKNAMEHERE
 wpa_passphrase=STRONGPASSWORDHERE
 ```
+Many of the details here vary compared to the above but it's unclear if this matters. These values appear to work so stick with them unless there's reason to change.
 
 5. Replace the `#DAEMON_CONF` line in `/etc/default/hostapd` with `DAEMON_CONF="/etc/hostapd/hostapd.conf"`.
 
