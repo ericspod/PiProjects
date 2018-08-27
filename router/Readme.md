@@ -119,6 +119,8 @@ rsn_pairwise=CCMP
           directory mask = 0777
           Public = yes
           Guest ok = yes
+      
+      Setting `Public` and `Guest ok` to `no` would be more secure if that's a concern on your network.
     
    3. Add a user to samba: `sudo s smbpasswd -a pi` 
 
@@ -146,6 +148,7 @@ interface eth1
  static domain_name_servers=10.0.0.1,8.8.8.8
 ```
 4. Write the following to `/etc/hostapd/hostapd.conf`:
+
 ```
 interface=wlan0
 driver=nl80211
@@ -164,7 +167,8 @@ rsn_pairwise=CCMP
 ssid=NETWORKNAMEHERE
 wpa_passphrase=STRONGPASSWORDHERE
 ```
-Many of the details here vary compared to the above but it's unclear if this matters. These values appear to work so stick with them unless there's reason to change.
+
+   Many of the details here vary compared to the above but it's unclear if this matters. These values appear to work so stick with them unless there's reason to change.
 
 5. Replace the `#DAEMON_CONF` line in `/etc/default/hostapd` with `DAEMON_CONF="/etc/hostapd/hostapd.conf"`.
 
