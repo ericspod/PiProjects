@@ -1,13 +1,18 @@
 
 ## Raspberry Pi Router/Access Point Setup
 
-The objective of this setup is to configure a Raspberry Pi to act as a router serving a LAN from a USB ethernet port
+The objective of this setup is to configure a Raspberry Pi running Raspbian to act as a router serving a LAN from a USB ethernet port
 and as a wireless access point. The idea is to provide the features of a home router but with filtering done through
 hosts configuration to block unwanted traffic, provide a way of monitoring traffic, and cacheing DNS queries.
 
 The network diagram below illustrates the current home network and the new one setup with the RPi. It assumes the home router is the gateway to the internet with IP 192.168.1.1. The WiFi access point for the network will be moved to the RPi and that for the router turned off.
 
 **If you want to use Pihole with your server DO NOT FOLLOW THESE INSTRUCTIONS, go down to the section on this page on Pihole first.**
+
+Updating your installation before following anything below would probably be a good idea:
+
+    apt-get update
+    apt-get upgrade
 
 ![Network Diagram](PiDiagram.png)
 
@@ -119,5 +124,59 @@ rsn_pairwise=CCMP
 
    4. Restart the server: `sudo /etc/init.d/samba restart`
   
+## Pihole
 
+Pihole uses its own fork of dnsmasq that requires special treatment to achieve the router configuration described above. The important thing is that the interfaces are setup first before Pihole is installed. 
+
+1. Install `hostapd`: `sudo apt-get install hostapd`
  
+2. Ensure wlan0 is active, check this by running `ifconfig` and making sure it's listed.
+
+3. Append the following to `/etc/dhcpcd.conf`:
+```
+interface wlan0
+ static ip_address=10.0.0.2/24
+ static routers=10.0.0.2
+ static domain_name_servers=10.0.0.2,8.8.8.8
+ nohook wpa_supplicant
+
+interface eth1
+ static ip_address=10.0.0.1/24
+ static routers=10.0.0.1
+ static domain_name_servers=10.0.0.1,8.8.8.8
+```
+4. Write the following to `/etc/hostapd/hostapd.conf`:
+```
+interface=wlan0
+driver=nl80211
+#driver=rtl871xdrv
+hw_mode=g
+channel=6
+ieee80211n=1
+wmm_enabled=1
+ht_capab=[HT40][SHORT-GI-20][DSSS_CCK-40]
+macaddr_acl=0
+auth_algs=1
+ignore_broadcast_ssid=0
+wpa=2
+wpa_key_mgmt=WPA-PSK
+rsn_pairwise=CCMP
+ssid=NETWORKNAMEHERE
+wpa_passphrase=STRONGPASSWORDHERE
+```
+
+5. Replace the `#DAEMON_CONF` line in `/etc/default/hostapd` with `DAEMON_CONF="/etc/hostapd/hostapd.conf"`.
+
+6. Uncomment the line `net.ipv4.ip_forward=1` in `/etc/sysctl.conf`, this will allow forwarding of packets between ports.
+ 
+7. In `/etc/rc.local` place the line `iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE` before the `exit 0` line. 
+
+8. Reboot.
+
+9. Install Pihole by following the instructions at https://pi-hole.net/ specifying `eth0` as the interface to use and accepting all other default setup values.
+
+10. Once Pihole is installed set it to listen on all interfaces
+
+11. Turn on Pihole's DHCP with address range 10.0.0.3 to 10.0.0.254, gateway 10.0.0.2
+
+
