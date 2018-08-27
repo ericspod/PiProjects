@@ -7,6 +7,8 @@ hosts configuration to block unwanted traffic, provide a way of monitoring traff
 
 The network diagram below illustrates the current home network and the new one setup with the RPi. It assumes the home router is the gateway to the internet with IP 192.168.1.1. The WiFi access point for the network will be moved to the RPi and that for the router turned off.
 
+**If you want to use Pihole with your server DO NOT FOLLOW THESE INSTRUCTIONS, go down to the section on this page on Pihole first.**
+
 ![Network Diagram](PiDiagram.png)
 
 ### Setup Ethernet
@@ -96,6 +98,26 @@ rsn_pairwise=CCMP
  1. Install ntop: `apt-get install ntopng`. This is a web app for monitoring network activity. It will run on the RPi 
   through port 3000 and is accessible to clients on the ethernet or wireless access points. See https://www.ntop.org/products/traffic-analysis/ntop/
   
+ 2. Samba: These instructions are for setting up Samba to share the home directory over the network as a mountable drive in Windows, OSX, etc. Setting a different directory to be shared other than home may be a good idea but this is easy to change.
+ 
+   A. Install samba: `sudo apt-get install samba`
+   
+   B. Append the following to `/etc/samba/smb.conf`:
+   
+    [home]
+    Comment = Home Directory
+    Path = /home/pi
+    Browseable = yes
+    Writeable = Yes
+    only guest = no
+    create mask = 0777
+    directory mask = 0777
+    Public = yes
+    Guest ok = yes
+    
+   C. Add a user to samba: `sudo s smbpasswd -a pi`
+   
+   D. Restart the server: `sudo /etc/init.d/samba restart`
   
 
  
