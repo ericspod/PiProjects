@@ -137,13 +137,13 @@ Pihole uses its own fork of dnsmasq that requires special treatment to achieve t
 3. Append the following to `/etc/dhcpcd.conf`:
 ```
 interface wlan0
- static ip_address=10.0.0.2/24
+ static ip_address=10.0.0.2
  static routers=10.0.0.2
  static domain_name_servers=10.0.0.2,8.8.8.8
  nohook wpa_supplicant
 
 interface eth1
- static ip_address=10.0.0.1/24
+ static ip_address=10.0.0.1
  static routers=10.0.0.1
  static domain_name_servers=10.0.0.1,8.8.8.8
 ```
