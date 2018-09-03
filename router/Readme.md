@@ -1,7 +1,7 @@
 
 ## Raspberry Pi Router/Access Point Setup
 
-The objective of this setup is to configure a Raspberry Pi running Raspbian to act as a router serving a LAN from a USB ethernet port
+The objective of this setup is to configure a Raspberry Pi running Raspbian Stretch to act as a router serving a LAN from a USB ethernet port
 and as a wireless access point. The idea is to provide the features of a home router but with filtering done through
 hosts configuration to block unwanted traffic, provide a way of monitoring traffic, and cacheing DNS queries.
 
