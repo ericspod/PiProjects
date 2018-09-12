@@ -137,16 +137,25 @@ Pihole uses its own fork of dnsmasq that requires special treatment to achieve t
 3. Append the following to `/etc/dhcpcd.conf`:
 ```
 interface wlan0
- static ip_address=10.0.0.2
- static routers=10.0.0.2
- static domain_name_servers=10.0.0.2,8.8.8.8
+ static ip_address=10.0.1.1/24
+ static routers=10.0.1.1
+ static domain_name_servers=10.0.1.1,8.8.8.8
  nohook wpa_supplicant
 
 interface eth1
- static ip_address=10.0.0.1
+ static ip_address=10.0.0.1/24
  static routers=10.0.0.1
  static domain_name_servers=10.0.0.1,8.8.8.8
 ```
+
+The interface for `eth0` should be this:
+```
+interface eth0
+ static ip_address=192.168.1.2/24
+ static routers=192.168.1.1
+ static domain_name_servers=10.0.0.1,8.8.8.8
+```
+
 4. Write the following to `/etc/hostapd/hostapd.conf`:
 
 ```
@@ -180,8 +189,14 @@ wpa_passphrase=STRONGPASSWORDHERE
 
 9. Install Pihole by following the instructions at https://pi-hole.net/ specifying `eth0` as the interface to use and accepting all other default setup values.
 
-10. Once Pihole is installed set it to listen on all interfaces
+10. Once Pihole is installed set the DNS to *Listen on all interfaces, permit all origins*.
 
-11. Turn on Pihole's DHCP with address range 10.0.0.3 to 10.0.0.254, gateway 10.0.0.2
+11. Turn on Pihole's DHCP with address range `10.0.0.3` to `10.0.0.254`, gateway `10.0.1.1`. The gateway is set as the IP for `wlan0` since there can be only one gateway specified and this is accessible through `wlan0` and `eth1`. If `10.0.0.1` was used instead, which is the IP for `eth1`, this wouldn't be accessible across the wifi for some reason.
 
+12. Write the following into the file `/etc/dnsmasq.d/99-pihole-dhcp.conf`:
+```
+dhcp-range=10.0.1.2,10.0.1.254,255.255.255.0,24h
+dhcp-option=option:router,10.0.1.1
+```
+This will set the additional DHCP values for the `wlan0` subnet which can't be done through the interface. 
 
