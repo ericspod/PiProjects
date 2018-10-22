@@ -47,7 +47,7 @@ interface eth1
  
  5. In `/etc/rc.local` place the line `iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE` before the `exit 0` line. This
   configures iptables on startup to forward connections to eth0. Normally iptables forgets configuration on startup so this
-  line goes here in `rc.local` which is for executing commands on startup. 
+  line goes here in `rc.local` which is for executing commands on startup. You may need to include the line `iptables -P FORWARD ACCEPT` before the above depending on your initial system's setup.
  
  6. Reboot and confirm connection from eth1 can reach the RPi and the internet.
  
