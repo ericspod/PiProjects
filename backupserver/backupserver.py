@@ -74,11 +74,11 @@ def listUSBMountpoints():
     
 
 class BackupThread(threading.Thread):
-	'''
-	Backup processing thread. This performs the steps of 1) searching the source device for files compared to the 
-	destination, 2) listing the files found to copy, 3) copying the files and keeping track of progress, and reporting 
-	any errors. Status is represented in the members which state where in the process the thread is and progress.
-	'''
+    '''
+    Backup processing thread. This performs the steps of 1) searching the source device for files compared to the 
+    destination, 2) listing the files found to copy, 3) copying the files and keeping track of progress, and reporting 
+    any errors. Status is represented in the members which state where in the process the thread is and progress.
+    '''
     IDLE=0 # doing nothing
     SEARCH=1 # searching source device for files to backup
     DONESEARCH=2 # search done, waiting on waitEvent to trigger
@@ -231,6 +231,9 @@ rootTemplate='''
     <input type="radio" name="mount" value="{{m}}" {{'checked="checked' if i==0 else ''}}>{{m}}<br/>
 % end
 <input value="Choose Source" type="submit" />
+<br/>
+<br/>
+<a href='/shutdown'>Shutdown</a>
 </form>
 '''
 
@@ -346,6 +349,11 @@ def cancel():
     backupThread=None
     redirect('/')
 
+
+@get('/shutdown')
+def shutdown():
+    os.system('sudo shutdown now')
+    redirect('/')
     
 if __name__=='__main__':
     run(host='0.0.0.0',port='8080',reloader=True)
