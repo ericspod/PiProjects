@@ -122,7 +122,7 @@ rsn_pairwise=CCMP
       
       Setting `Public` and `Guest ok` to `no` would be more secure if that's a concern on your network.
     
-   3. Add a user to samba: `sudo s smbpasswd -a pi` 
+   3. Add a user to samba: `sudo smbpasswd -a pi` 
 
    4. Restart the server: `sudo /etc/init.d/samba restart`
   
