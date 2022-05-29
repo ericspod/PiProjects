@@ -1,5 +1,6 @@
 import time
 import datetime
+import traceback
 from pathlib import Path
 from csv import DictWriter
 from enum import Enum
@@ -15,8 +16,9 @@ import mics6814
 import bme680
 import ST7789
 import bh1745
-import psutil
+import psutil  # only needed for CPU temperature compensation
 
+# set to whatever other font available, installed with "apt install fonts-freefont-ttf"
 FONT_FILE = "/usr/share/fonts/truetype/freefont/FreeMonoBold.ttf"
 
 cpu_temps = []
@@ -93,10 +95,6 @@ def rgbc_to_rgb(r,g,b,c):
     return (0, 0, 0)
 
 
-def rgb_to_24bit(r, g, b):
-    return ((r & 0xff) << 16) | ((g & 0xff) << 8) | (b & 0xff)
-
-
 def format_value(value, unit):
     """Format the given float value into a string with the given unit, large value ohms reduced to kohms."""
     unit_str = unit.value
@@ -152,8 +150,8 @@ def draw_sensors(
         if num_vals > 0:
             sel_values = np.asarray(values[-num_vals:])
             graph_vals[-num_vals:] = sel_values
-            minv = sel_values.min()
-            maxv = sel_values.max()
+            minv = min(values)
+            maxv = max(values)
             diff = (maxv - minv) or 1.0
         else:
             minv = maxv = 0.0
@@ -165,11 +163,12 @@ def draw_sensors(
         draw.rectangle([(startx, starty), (startx + graphw, starty + graphh)], fill=bgcol)
         draw.multiline_text(text_pos, text, font=font, fill=text_color)
 
+        # draw the graph by drawing a vertical line for every value in graph_vals
         for x in range(graphw):
             if np.isnan(graph_vals[x]):
                 continue
 
-            y = (graph_vals[x] - minv) / diff
+            y = (graph_vals[x] - minv) / diff 
             indy = starty + int((1 - y) * (graphh - 1))
             indx = startx + x
 
@@ -208,6 +207,8 @@ def collect_data(gas_sensor, env_sensor, light_sensor, timeout=5, sleep_time=0.0
             raise IOError("Cannot acquire BME688 data")
         elif not env_sensor.data.heat_stable:
             raise IOError("BME680 heat not stable")
+            
+    r, g, b, c = light_sensor.get_rgbc_raw()
 
     return OrderedDict(
         time=str(datetime.datetime.now()),
@@ -218,16 +219,22 @@ def collect_data(gas_sensor, env_sensor, light_sensor, timeout=5, sleep_time=0.0
         oxidising=gas_sensor.read_oxidising(),
         reducing=gas_sensor.read_reducing(),
         nh3=gas_sensor.read_nh3(),
-        light=light_sensor.get_rgbc_raw()
+        r=r,
+        g=g,
+        b=b,
+        c=c
     )
 
 
 @click.command("sensor_logger")
-@click.argument("delay", type=float, default=60.0)
-@click.argument("logfile", type=click.Path(writable=True, resolve_path=True), default="./sensors.csv")
-def log_sensor_data(delay, logfile):
+@click.option("-d", "--delay", type=float, default=60.0, show_default=True, help="Delay between samples")
+@click.option("-m", "--max_data_len", type=int, default=60*12, show_default=True, 
+              help="Number of samples to store and compute ranges from")
+@click.option("-l", "--logfile", type=click.Path(writable=True, resolve_path=True), default="./sensors.csv", 
+              show_default=True, help="File to log data to")
+def log_sensor_data(delay, max_data_len, logfile):
     """
-    Logs sensor data from the BME688 and MICS6814 sensors, displaying graph results on the ST7789 display.
+    Logs sensor data from the BME688, MICS6814, and BH1745 sensors, displaying graph results on the ST7789 display.
     Readings are taken at DELAY intervals (in seconds), which are logged in CSV form to LOGFILE.
     The program will loop forever until interrupted on the console.
     """
@@ -235,8 +242,6 @@ def log_sensor_data(delay, logfile):
         env_sensor = bme680.BME680(bme680.I2C_ADDR_PRIMARY)
     except (RuntimeError, IOError):
         env_sensor = bme680.BME680(bme680.I2C_ADDR_SECONDARY)
-
-    gas_sensor = mics6814.MICS6814()
 
     env_sensor.set_humidity_oversample(bme680.OS_2X)
     env_sensor.set_pressure_oversample(bme680.OS_4X)
@@ -246,11 +251,15 @@ def log_sensor_data(delay, logfile):
     env_sensor.set_gas_heater_temperature(320)
     env_sensor.set_gas_heater_duration(150)
     env_sensor.select_gas_heater_profile(0)
+
+    gas_sensor = mics6814.MICS6814()
     
     light_sensor = bh1745.BH1745()
-
     light_sensor.setup()
     light_sensor.set_leds(0)
+    light_sensor._enable_channel_compensation = False
+    # might be sensible values instead of disabling compensation:
+    # light_sensor._channel_compensation = (0.9, 0.5, 0.95, 10.0)  
 
     disp = ST7789.ST7789(
         port=0,
@@ -260,10 +269,10 @@ def log_sensor_data(delay, logfile):
         spi_speed_hz=80 * 1000 * 1000,
         offset_left=0,
     )
-
     disp.begin()
 
     sensor_arrays = defaultdict(list)
+    except_retries = 3  # how many times to try recording data if an exception happens
 
     led_color = cycle(LEDColors)
 
@@ -275,40 +284,38 @@ def log_sensor_data(delay, logfile):
         ("Oxidising", Units.ohms, sensor_arrays["oxidising"]),
         ("Reducing", Units.ohms, sensor_arrays["reducing"]),
         ("NH3", Units.ohms, sensor_arrays["nh3"]),
-        ("Lightness", Units.lux, sensor_arrays["light"])
+        ("Lightness", Units.lux, sensor_arrays["c"])
     )
 
-    while True:
-        start = time.time()
-        dat = collect_data(gas_sensor, env_sensor, light_sensor)
+    while except_retries>=0:
+        try:
+            start = time.time()
+            dat = collect_data(gas_sensor, env_sensor, light_sensor)
 
-        # adjust for heating from CPU, omit if BME680 is thermally isolated
-        # dat["temperature_raw"] = dat["temperature"]
-        # dat["temperature"] = compensate_temperature(dat["temperature"])
-        
-        r, g, b, c = dat["light"]
-        r, g, b = rgbc_to_rgb(r, g, b, c)
-        
-        dat["rgb"] = rgb_to_24bit(r, g, b)
-        dat["light"] = c
+            # adjust for heating from CPU, omit if BME680 is thermally isolated
+            dat["temperature"] = compensate_temperature(dat["temperature"])
 
-        log_data_csv("sensors.csv", dat)
+            log_data_csv("sensors.csv", dat)
 
-        for k, v in dat.items():
-            sensor_arrays[k].append(v)
+            for k, v in dat.items():
+                sensor_arrays[k][:] = sensor_arrays[k][-max_data_len:] + [v]
 
-        im = draw_sensors(draw_values)
-        im.save("sensor_logger.png")
-        disp.display(im)
+            im = draw_sensors(draw_values)
+            im.save("sensor_logger.png")
+            disp.display(im)
 
-        gas_sensor.set_led(*next(led_color).value)
+            gas_sensor.set_led(*next(led_color).value)
 
-        tdelta = time.time() - start
-        time.sleep(max(0, delay - tdelta))
+            tdelta = time.time() - start
+            time.sleep(max(0, delay - tdelta))
+        except KeyboardInterrupt:
+            except_retries = -1
+        except Exception as e:
+            traceback.print_exc()
+            except_retries -= 1
+        else:
+            except_retries = 3
 
 
 if __name__ == "__main__":
-    try:
-        log_sensor_data()
-    except KeyboardInterrupt:
-        pass
+    log_sensor_data()
