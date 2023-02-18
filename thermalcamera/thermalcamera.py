@@ -7,14 +7,21 @@ Simple thermal camera based on the AMG8833 (https://www.adafruit.com/product/353
 TFT + Resistive Touchscreen (https://www.adafruit.com/product/2298).
 '''
 
-from __future__ import print_function
-import os, time, datetime
+import os
+import time
+import datetime
+
 import pygame
 from PIL import Image
 import numpy as np
 import matplotlib.pyplot as plt
-from Adafruit_AMG88xx import Adafruit_AMG88xx
+#from Adafruit_AMG88xx import Adafruit_AMG88xx
 from gpiozero import Button
+
+
+import busio
+import board
+import adafruit_amg88xx
 
 MINTEMP=0
 MAXTEMP=80
@@ -84,9 +91,12 @@ mapbutton.when_pressed=toggleMaps
 savebutton=Button(27)
 savebutton.when_pressed=save
 
-sensor = Adafruit_AMG88xx()
+#sensor = Adafruit_AMG88xx()
+i2c = busio.I2C(board.SCL, board.SDA)
+sensor = adafruit_amg88xx.AMG88XX(i2c)
 
-os.putenv('SDL_FBDEV', '/dev/fb1')
+#os.putenv('SDL_FBDEV', '/dev/fb0')
+os.environ['SDL_FBDEV']=os.environ.get('SDL_FBDEV','/dev/fb0')
 pygame.init()
 
 font = pygame.font.SysFont("monospace", 15)
@@ -94,17 +104,19 @@ font = pygame.font.SysFont("monospace", 15)
 surf=pygame.display.set_mode((0,0),pygame.FULLSCREEN|pygame.DOUBLEBUF)
 pygame.mouse.set_visible(False)
 
-basebuffer=np.ndarray((WIDTH*HEIGHT,),np.float64)
-pixels=basebuffer.reshape((WIDTH,HEIGHT))
-pixels=np.rot90(pixels,3)
-
+#basebuffer=np.ndarray((WIDTH*HEIGHT,),np.float64)
+#pixels=basebuffer.reshape((WIDTH,HEIGHT))
+#pixels=np.rot90(pixels,3)
+pixels=np.zeros((WIDTH,HEIGHT), dtype=np.float64)
+                
 mindim=min(*surf.get_size())
 
 while(doRun):
     if saveShot==0: # display output from camera
         cm = plt.get_cmap(cmaps[mapMode])
         
-        basebuffer[:]=sensor.readPixels()
+        #basebuffer[:]=sensor.readPixels()
+        pixels[:,:]=np.rot90(np.asarray(sensor.pixels),3)
         im,minp,maxp=rescaleMode(pixels,rangeMode)
         im=cm(im)
         
