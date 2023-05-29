@@ -40,11 +40,12 @@ class Units(Enum):
     pressure = "hPa"
     humidity = "%RH"
     lux = "lx"
+    none = ""
 
 
 class LEDColors(Enum):
     """Colors to cycle through on the MICS6814."""
-    
+
     c1 = (20, 0, 0)
     c2 = (0, 20, 0)
     c3 = (0, 0, 20)
@@ -52,7 +53,7 @@ class LEDColors(Enum):
     c5 = (20, 0, 20)
     c6 = (20, 20, 0)
     c7 = (20, 20, 20)
-    
+
 
 class GraphColors(Enum):
     """Colors to use for graphs, if there are more graphs than colors cycle through the list."""
@@ -87,7 +88,7 @@ def lighten_darken_color(rgb, factor=0.5):
     return int(nr * 255), int(ng * 255), int(nb * 255)
 
 
-def rgbc_to_rgb(r,g,b,c):
+def rgbc_to_rgb(r, g, b, c):
     if c > 0:
         r, g, b = [min(255, int((x / float(c)) * 255)) for x in (r, g, b)]
         return (r, g, b)
@@ -116,6 +117,95 @@ def compensate_temperature(raw_temp, factor=4.0, smooth_size=10):
         cpu_temps[:] = cpu_temps[1:]
 
     return raw_temp - ((np.average(cpu_temps) - raw_temp) / factor)
+
+
+def get_gas_baseline(sensor, burn_in_time=300):
+    start_time = curr_time = time.time()
+    burn_in_data = []
+
+    while curr_time - start_time < burn_in_time:
+        curr_time = time.time()
+        if sensor.get_sensor_data() and sensor.data.heat_stable:
+            gas = sensor.data.gas_resistance
+            burn_in_data.append(gas)
+            time.sleep(1)
+
+    return sum(burn_in_data[-50:]) / 50.0
+
+
+def computer_indoor_air_quality(gas, hum, gas_baseline, hum_baseline=40.0, hum_weighting=0.25):
+    # from https://github.com/pimoroni/bme680-python/blob/master/examples/indoor-air-quality.py
+    gas_offset = gas_baseline - gas
+    hum_offset = hum - hum_baseline
+
+    # Calculate hum_score as the distance from the hum_baseline.
+    if hum_offset > 0:
+        hum_score = 100 - hum_baseline - hum_offset
+        hum_score /= 100 - hum_baseline
+        hum_score *= hum_weighting * 100
+    else:
+        hum_score = hum_baseline + hum_offset
+        hum_score /= hum_baseline
+        hum_score *= hum_weighting * 100
+
+    # Calculate gas_score as the distance from the gas_baseline.
+    if gas_offset > 0:
+        gas_score = gas / gas_baseline
+        gas_score *= 100 - (hum_weighting * 100)
+    else:
+        gas_score = 100 - (hum_weighting * 100)
+
+    # Calculate air_quality_score.
+    return hum_score + gas_score
+
+
+def collect_data(gas_sensor, env_sensor, light_sensor, gas_baseline, timeout=5, sleep_time=0.01):
+    """Collect values from sensors and return as a dictionary."""
+    env_ready = env_sensor.get_sensor_data()
+
+    while timeout > 0 and (not env_ready or not env_sensor.data.heat_stable):
+        time.sleep(sleep_time)
+        env_ready = env_sensor.get_sensor_data()
+        timeout -= 1
+
+    if timeout == 0:
+        if not env_ready:
+            raise IOError("Cannot acquire BME688 data")
+        elif not env_sensor.data.heat_stable:
+            raise IOError("BME680 heat not stable")
+
+    r, g, b, c = light_sensor.get_rgbc_raw()
+
+    iaq = computer_indoor_air_quality(env_sensor.data.gas_resistance, env_sensor.data.humidity, gas_baseline)
+
+    return OrderedDict(
+        time=str(datetime.datetime.now()),
+        temperature=env_sensor.data.temperature,
+        pressure=env_sensor.data.pressure,
+        humidity=env_sensor.data.humidity,
+        gas_resistance=env_sensor.data.gas_resistance,
+        iaq=iaq,
+        oxidising=gas_sensor.read_oxidising(),
+        reducing=gas_sensor.read_reducing(),
+        nh3=gas_sensor.read_nh3(),
+        r=r,
+        g=g,
+        b=b,
+        c=c,
+    )
+
+
+def log_data_csv(filename, values):
+    """Append data lines to a csv file."""
+    path = Path(filename)
+    exists = path.exists()
+
+    with open(str(path), "a") as o:
+        w = DictWriter(o, tuple(values))
+        if not exists:
+            w.writeheader()
+
+        w.writerow(values)
 
 
 def draw_sensors(
@@ -168,7 +258,7 @@ def draw_sensors(
             if np.isnan(graph_vals[x]):
                 continue
 
-            y = (graph_vals[x] - minv) / diff 
+            y = (graph_vals[x] - minv) / diff
             indy = starty + int((1 - y) * (graphh - 1))
             indx = startx + x
 
@@ -180,59 +270,40 @@ def draw_sensors(
     return pilim
 
 
-def log_data_csv(filename, values):
-    """Append data lines to a csv file."""
-    path = Path(filename)
-    exists = path.exists()
-
-    with open(str(path), "a") as o:
-        w = DictWriter(o, tuple(values))
-        if not exists:
-            w.writeheader()
-
-        w.writerow(values)
-
-
-def collect_data(gas_sensor, env_sensor, light_sensor, timeout=5, sleep_time=0.01):
-    """Collect values from sensors and return as a dictionary."""
-    env_ready = env_sensor.get_sensor_data()
-
-    while timeout > 0 and (not env_ready or not env_sensor.data.heat_stable):
-        time.sleep(sleep_time)
-        env_ready = env_sensor.get_sensor_data()
-        timeout -= 1
-
-    if timeout == 0:
-        if not env_ready:
-            raise IOError("Cannot acquire BME688 data")
-        elif not env_sensor.data.heat_stable:
-            raise IOError("BME680 heat not stable")
-            
-    r, g, b, c = light_sensor.get_rgbc_raw()
-
-    return OrderedDict(
-        time=str(datetime.datetime.now()),
-        temperature=env_sensor.data.temperature,
-        pressure=env_sensor.data.pressure,
-        humidity=env_sensor.data.humidity,
-        gas_resistance=env_sensor.data.gas_resistance,
-        oxidising=gas_sensor.read_oxidising(),
-        reducing=gas_sensor.read_reducing(),
-        nh3=gas_sensor.read_nh3(),
-        r=r,
-        g=g,
-        b=b,
-        c=c
-    )
-
-
 @click.command("sensor_logger")
-@click.option("-d", "--delay", type=float, default=60.0, show_default=True, help="Delay between samples")
-@click.option("-m", "--max_data_len", type=int, default=60*12, show_default=True, 
-              help="Number of samples to store and compute ranges from")
-@click.option("-l", "--logfile", type=click.Path(writable=True, resolve_path=True), default="./sensors.csv", 
-              show_default=True, help="File to log data to")
-def log_sensor_data(delay, max_data_len, logfile):
+@click.option(
+    "-d",
+    "--delay",
+    type=float,
+    default=1.0,
+    show_default=True,
+    help="Delay between samples",
+)
+@click.option(
+    "-i",
+    "--interval",
+    type=int,
+    default=60,
+    show_default=True,
+    help="Display update interval",
+)
+@click.option(
+    "-m",
+    "--max_data_len",
+    type=int,
+    default=60 * 12,
+    show_default=True,
+    help="Number of samples to store and compute ranges from",
+)
+@click.option(
+    "-l",
+    "--logfile",
+    type=click.Path(writable=True, resolve_path=True),
+    default=datetime.datetime.now().strftime("./sensors_%y%m%d_%H%M%S.csv"),
+    show_default=True,
+    help="File to log data to",
+)
+def log_sensor_data(delay, interval, max_data_len, logfile):
     """
     Logs sensor data from the BME688, MICS6814, and BH1745 sensors, displaying graph results on the ST7789 display.
     Readings are taken at DELAY intervals (in seconds), which are logged in CSV form to LOGFILE.
@@ -253,13 +324,13 @@ def log_sensor_data(delay, max_data_len, logfile):
     env_sensor.select_gas_heater_profile(0)
 
     gas_sensor = mics6814.MICS6814()
-    
+
     light_sensor = bh1745.BH1745()
     light_sensor.setup()
     light_sensor.set_leds(0)
     light_sensor._enable_channel_compensation = False
     # might be sensible values instead of disabling compensation:
-    # light_sensor._channel_compensation = (0.9, 0.5, 0.95, 10.0)  
+    # light_sensor._channel_compensation = (0.9, 0.5, 0.95, 10.0)
 
     disp = ST7789.ST7789(
         port=0,
@@ -273,39 +344,45 @@ def log_sensor_data(delay, max_data_len, logfile):
 
     sensor_arrays = defaultdict(list)
     except_retries = 3  # how many times to try recording data if an exception happens
-
+    count = 0
     led_color = cycle(LEDColors)
 
     draw_values = (
         ("Temperature", Units.temp, sensor_arrays["temperature"]),
         ("Pressure", Units.pressure, sensor_arrays["pressure"]),
         ("Humidity", Units.humidity, sensor_arrays["humidity"]),
-        ("Gas Resist", Units.ohms, sensor_arrays["gas_resistance"]),
+        #("Gas Resist", Units.ohms, sensor_arrays["gas_resistance"]),
+        ("IAQ", Units.none, sensor_arrays["iaq"]),
         ("Oxidising", Units.ohms, sensor_arrays["oxidising"]),
         ("Reducing", Units.ohms, sensor_arrays["reducing"]),
         ("NH3", Units.ohms, sensor_arrays["nh3"]),
-        ("Lightness", Units.lux, sensor_arrays["c"])
+        ("Lightness", Units.lux, sensor_arrays["c"]),
     )
 
-    while except_retries>=0:
+    gas_baseline = get_gas_baseline(env_sensor)
+
+    while except_retries >= 0:
         try:
             start = time.time()
-            dat = collect_data(gas_sensor, env_sensor, light_sensor)
+            dat = collect_data(gas_sensor, env_sensor, light_sensor, gas_baseline)
 
             # adjust for heating from CPU, omit if BME680 is thermally isolated
             dat["temperature"] = compensate_temperature(dat["temperature"])
 
-            log_data_csv("sensors.csv", dat)
+            log_data_csv(logfile, dat)
 
-            for k, v in dat.items():
-                sensor_arrays[k][:] = sensor_arrays[k][-max_data_len:] + [v]
+            if (count % interval) == 0:
+                count = 0
+                for k, v in dat.items():
+                    sensor_arrays[k][:] = sensor_arrays[k][-max_data_len:] + [v]
 
-            im = draw_sensors(draw_values)
-            im.save("sensor_logger.png")
-            disp.display(im)
+                im = draw_sensors(draw_values)
+                im.save("sensor_logger.png")
+                disp.display(im)
 
-            gas_sensor.set_led(*next(led_color).value)
+                gas_sensor.set_led(*next(led_color).value)
 
+            count += 1
             tdelta = time.time() - start
             time.sleep(max(0, delay - tdelta))
         except KeyboardInterrupt:
