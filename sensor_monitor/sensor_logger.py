@@ -35,7 +35,7 @@ def set_lightness(r, g, b, l):
 class Units(Enum):
     """Known units and their symbols."""
 
-    temp = "C"
+    temp = "\u00b0C"
     ohms = "\u03a9"
     pressure = "hPa"
     humidity = "%RH"
@@ -97,7 +97,7 @@ def rgbc_to_rgb(r, g, b, c):
 
 
 def format_value(value, unit):
-    """Format the given float value into a string with the given unit, large value ohms reduced to kohms."""
+    """Format the given float value into a string with the given unit, large value ohms/lx reduced to kohms/klx."""
     unit_str = unit.value
 
     if unit in (Units.ohms, Units.lux) and value > 1000:
@@ -133,7 +133,7 @@ def get_gas_baseline(sensor, burn_in_time=300):
     return sum(burn_in_data[-50:]) / 50.0
 
 
-def computer_indoor_air_quality(gas, hum, gas_baseline, hum_baseline=40.0, hum_weighting=0.25):
+def compute_indoor_air_quality(gas, hum, gas_baseline, hum_baseline=40.0, hum_weighting=0.25):
     # from https://github.com/pimoroni/bme680-python/blob/master/examples/indoor-air-quality.py
     gas_offset = gas_baseline - gas
     hum_offset = hum - hum_baseline
@@ -176,7 +176,7 @@ def collect_data(gas_sensor, env_sensor, light_sensor, gas_baseline, timeout=5, 
 
     r, g, b, c = light_sensor.get_rgbc_raw()
 
-    iaq = computer_indoor_air_quality(env_sensor.data.gas_resistance, env_sensor.data.humidity, gas_baseline)
+    iaq = compute_indoor_air_quality(env_sensor.data.gas_resistance, env_sensor.data.humidity, gas_baseline)
 
     return OrderedDict(
         time=str(datetime.datetime.now()),
