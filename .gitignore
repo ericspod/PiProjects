@@ -104,3 +104,9 @@ venv.bak/
 .mypy_cache/
 
 *~
+*.csv*
+*.gz
+
+.vscode
+*.zip
+*.sqlite
