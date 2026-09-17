@@ -4,6 +4,8 @@ import pandas as pd
 import sqlite3
 from pathlib import Path
 
+st.set_option("browser.gatherUsageStats", False)
+
 DAYS_S = 60 * 60 * 24  # how many seconds in a day
 NUM_DAYS = 2  # how many days of data to read
 FREQ = "15min"  # frequency to group data items by
