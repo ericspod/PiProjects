@@ -11,7 +11,7 @@ FREQ = "15min"  # frequency to group data items by
 db = sorted(Path(".").glob("*.sqlite"))[-1]  # most recent database
 
 with sqlite3.connect(db) as con:
-    df = pd.read_sql_query(f"SELECT * from readings order by date desc limit {DAYS_S*NUM_DAYS}", con)
+    df = pd.read_sql_query(f"SELECT * from readings order by date desc limit {int(DAYS_S*NUM_DAYS)}", con)
 
 df.date = pd.to_datetime(df.date, format="mixed", errors="coerce")
 df.set_index("date", inplace=True)
