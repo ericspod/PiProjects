@@ -109,6 +109,6 @@ venv.bak/
 
 .vscode
 *.zip
-*.sqlite
+*.sqlite*
 *.sql
 *.exe
