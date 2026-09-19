@@ -5,7 +5,6 @@ import panel as pn
 from bokeh.themes._carbon import json
 from bokeh.plotting import figure, curdoc
 from bokeh.models import LinearAxis, Range1d
-import numpy as np
 
 # panel serve --autoreload --address 0.0.0.0 --port 8000 --allow-websocket-origin=*:8000 panel_dashboard.py
 
@@ -44,12 +43,13 @@ gasfig = figure(**fig_conf)
 gasfig.yaxis.visible = False
 gasfig.toolbar.logo = None
 
-for g, color in zip(["oxidising", "reducing", "nh3", "gas_resistance"], COLORS[len(trends) :]):
+for g, color in zip(["oxidising", "nh3", "reducing", "gas_resistance"], COLORS[len(trends) :]):
     yg = df_sel[g]
     gasfig.extra_y_ranges[g] = Range1d(yg.min(), yg.max())
     ax = LinearAxis(y_range_name=g, axis_label=g.replace("_", " ").title())
     ax.axis_label_text_color = color
-    gasfig.add_layout(ax, "left")
+    ax.major_label_orientation = 1.2
+    gasfig.add_layout(ax, "right" if g in ("oxidising", "nh3") else "left")
     gasfig.line(yg.index, yg, y_range_name=g, color=color)
 
 rgbfig = figure(x_range=gasfig.x_range, y_axis_label="RGBC Values", **fig_conf)
