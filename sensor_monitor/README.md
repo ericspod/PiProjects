@@ -22,6 +22,8 @@ Start on boot, add this to crontab:
 @reboot /usr/bin/bash -c "cd /root/pi/sensor_monitor; python3 sensor_logger.py"
 ```
 
+## Panel Dashboard
+
 To run the Panel dashboard server, install Panel then run the server from this directory:
 
 ```bash
@@ -29,11 +31,15 @@ pip install panel bokeh
 panel serve --autoreload --address 0.0.0.0 --port 8000 --allow-websocket-origin=*:8000 panel_dashboard.py
 ```
 
+<img src="./panel_screenshot.png" alt="Panel Screenshot" width="800"/>
+
 To start on boot:
 
 ```bash
-@reboot /usr/bin/bash -c "cd /root/pi/sensor_monitor;panel serve --autoreload --address 0.0.0.0 --port 8000 --allow-websocket-origin=*:8000 panel_dashboard.py"
+@reboot /usr/bin/bash -c "cd /root/pi/sensor_monitor;panel serve --address 0.0.0.0 --port 8000 --allow-websocket-origin=*:8000 panel_dashboard.py"
 ```
+
+## Streamlit Dashboard
 
 To run the Streamlit dashboard server, install Streamlit then run the server from this directory:
 
